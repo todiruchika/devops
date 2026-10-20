@@ -1,4 +1,4 @@
-import docker  # type: ignore[reportMissingModuleSource]
+import docker
 
 client = docker.from_env()
 
