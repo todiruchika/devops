@@ -5,6 +5,140 @@ pipeline {
     // Make Python 3.11 (and its Scripts folder) visible to the agent
     // -------------------------------------------------------------
     environment {
+        PYTHON_HOME = "C:\\Users\\ruchi\\AppData\\Local\\Programs\\Python\\Python311"
+        // prepend Python to PATH
+        PATH = "${env.PYTHON_HOME};${env.PYTHON_HOME}\\Scripts;${env.PATH}"
+        // deployment folder (absolute for the workspace) – will be created later
+        DEPLOY_DIR = "${env.WORKSPACE}\\deployment"
+    }
+
+    stages {
+        stage('Source Checkout') {
+            steps {
+                echo "=== Stage 1: Checking out Source Code from SCM ==="
+                checkout scm
+                dir('devops-final') {
+                    script {
+                        if (isUnix()) {
+                            sh 'git log -1 --stat'
+                        } else {
+                            bat 'git log -1 --stat'
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Dependency Installation / Build') {
+            steps {
+                echo "=== Stage 2: Installing Dependencies & Building Environment ==="
+                dir('devops-final') {
+                    script {
+                        if (isUnix()) {
+                            sh '''
+                                python3 -m venv venv || virtualenv venv
+                                . venv/bin/activate
+                                python -m pip install --upgrade pip
+                                pip install -r requirements.txt
+                            '''
+                        } else {
+                            bat '''
+                                REM --- create a virtual‑env in the workspace ---
+                                python -m venv venv
+                                call venv\\Scripts\\activate.bat
+                                python -m pip install --upgrade pip
+                                pip install -r requirements.txt
+                            '''
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Automated Test / Validation') {
+            steps {
+                echo "=== Stage 3: Running Automated Test Suite & Validation ==="
+                dir('devops-final') {
+                    script {
+                        if (isUnix()) {
+                            sh '''
+                                . venv/bin/activate
+                                python -m pytest test_metrics.py --junitxml=test-reports/results.xml -v
+                                python metrics_exporter.py --dry-run
+                            '''
+                        } else {
+                            bat '''
+                                call venv\\Scripts\\activate.bat
+                                python -m pytest test_metrics.py --junitxml=test-reports/results.xml -v
+                                python metrics_exporter.py --dry-run
+                            '''
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Deployment Packaging') {
+            steps {
+                echo "=== Stage 4: Packaging & Copying into Dedicated Deployment Directory ==="
+                dir('devops-final') {
+                    script {
+                        if (isUnix()) {
+                            sh '''
+                                rm -rf "${DEPLOY_DIR}"
+                                mkdir -p "${DEPLOY_DIR}"
+                                cp metrics_exporter.py config.json requirements.txt run.sh run.bat "${DEPLOY_DIR}/"
+                                chmod +x "${DEPLOY_DIR}/run.sh"
+                                tar -czvf "delivery-metrics-build-${BUILD_NUMBER}.tar.gz" -C "${DEPLOY_DIR}" .
+                                mv "delivery-metrics-build-${BUILD_NUMBER}.tar.gz" "${DEPLOY_DIR}/"
+                                echo "Contents of deployment directory:"
+                                ls -la "${DEPLOY_DIR}"
+                            '''
+                        } else {
+                            bat '''
+                                if exist "%DEPLOY_DIR%" rmdir /s /q "%DEPLOY_DIR%"
+                                mkdir "%DEPLOY_DIR%"
+                                copy metrics_exporter.py "%DEPLOY_DIR%\\"
+                                copy config.json "%DEPLOY_DIR%\\"
+                                copy requirements.txt "%DEPLOY_DIR%\\"
+                                copy run.bat "%DEPLOY_DIR%\\"
+                                copy run.sh "%DEPLOY_DIR%\\"
+                                echo Contents of deployment directory:
+                                dir "%DEPLOY_DIR%"
+                            '''
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            echo "Publishing test results..."
+            junit allowEmptyResults: true, testResults: 'devops-final/test-reports/results.xml'
+            archiveArtifacts artifacts: 'devops-final/deployment/**', allowEmptyArchive: true
+        }
+        success {
+            echo "=========================================================="
+            echo " PIPELINE SUCCESS: Deployment artifact successfully built!"
+            echo " Runnable files copied to: ${DEPLOY_DIR}"
+            echo "=========================================================="
+        }
+        failure {
+            echo "=========================================================="
+            echo " PIPELINE FAILED: Stage error or test failure detected!"
+            echo " Build marked as FAILED."
+            echo "=========================================================="
+        }
+    }
+}
+    agent any
+
+    // -------------------------------------------------------------
+    // Make Python 3.11 (and its Scripts folder) visible to the agent
+    // -------------------------------------------------------------
+    environment {
         // Absolute path to the Python installation on the host machine
         PYTHON_HOME = "C:\\Users\\ruchi\\AppData\\Local\\Programs\\Python\\Python311"
         // Pre‑pend Python and its Scripts folder to PATH for this build
