@@ -1,8 +1,14 @@
 pipeline {
     agent any
 
+    // -----------------------------------------------------------------
+    // Make Python 3.11 (and its Scripts folder) available for the agent
+    // -----------------------------------------------------------------
     environment {
-        DEPLOY_DIR = "${WORKSPACE}/deployment"
+        // Absolute path to the Python installation on the host machine
+        PYTHON_HOME = "C:\\Users\\ruchi\\AppData\\Local\\Programs\\Python\\Python311"
+        // Pre‑pend Python and its Scripts folder to PATH for this build
+        PATH = "${env.PYTHON_HOME};${env.PYTHON_HOME}\\Scripts;${env.PATH}"
     }
 
     stages {
@@ -33,6 +39,7 @@ pipeline {
                         '''
                     } else {
                         bat '''
+                            REM --- create a virtual‑env in the workspace ---
                             python -m venv venv
                             call venv\\Scripts\\activate.bat
                             python -m pip install --upgrade pip
