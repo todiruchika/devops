@@ -60,45 +60,31 @@ pipeline {
                 echo "=== Stage 3: Running Automated Test Suite & Validation ==="
                 dir('devops-final') {
                     script {
-                        if (isUnix()) {
-                            sh '''
-                                . venv/bin/activate
-                                python -m pytest test_metrics.py --junitxml=test-reports/results.xml -v
-                                rc=$?
-                                if [ $rc -ne 0 ]; then
-                                    echo "Tests failed – aborting pipeline"
-                                    exit $rc
-                                fi
-                                python metrics_exporter.py --dry-run
-                            '''
-                        } else {
-                            bat '''
-                                call venv\\Scripts\\activate.bat
-                                python -m pytest test_metrics.py --junitxml=test-reports/results.xml -v
-                                if %errorlevel% neq 0 exit /b %errorlevel%
-                                python metrics_exporter.py --dry-run
-                            '''
+                        // Windows branch
+                        if (!isUnix()) {
+                            def rc = bat(
+                                script: '''
+                                    call venv\\Scripts\\activate.bat
+                                    python -m pytest test_metrics.py --junitxml=test-reports/results.xml -v
+                                ''',
+                                returnStatus: true
+                            )
+                            if (rc != 0) {
+                                error "Tests failed (exit code ${rc}) – aborting pipeline"
+                            }
                         }
-                    }
-                }
-            }
-        } {
-            steps {
-                echo "=== Stage 3: Running Automated Test Suite & Validation ==="
-                dir('devops-final') {
-                    script {
-                        if (isUnix()) {
-                            sh '''
-                                . venv/bin/activate
-                                python -m pytest test_metrics.py --junitxml=test-reports/results.xml -v
-                                python metrics_exporter.py --dry-run
-                            '''
-                        } else {
-                            bat '''
-                                call venv\\Scripts\\activate.bat
-                                python -m pytest test_metrics.py --junitxml=test-reports/results.xml -v
-                                python metrics_exporter.py --dry-run
-                            '''
+                        // Unix branch
+                        else {
+                            def rc = sh(
+                                script: '''
+                                    . venv/bin/activate
+                                    python -m pytest test_metrics.py --junitxml=test-reports/results.xml -v
+                                ''',
+                                returnStatus: true
+                            )
+                            if (rc != 0) {
+                                error "Tests failed (exit code ${rc}) – aborting pipeline"
+                            }
                         }
                     }
                 }
