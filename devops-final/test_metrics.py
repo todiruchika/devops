@@ -110,14 +110,7 @@ def test_exporter_initialization_and_record():
 
 # --- Controlled Test Failure Demonstration (Mandatory Step 5) ---
 
+# In devops-final/test_metrics.py
 def test_delivery_metrics_validation_gate():
-    """
-    CONTROLLED TEST FAILURE FOR MANDATORY STEP 5:
-    -------------------------------------------------------
-    Current Status: PASSING (assert True)
-    To simulate a build failure in Jenkins:
-      Change: assert True
-      To:     assert False, "Controlled failure: Delivery metric validation failed"
-    -------------------------------------------------------
-    """
-    assert True
+    # Controlled failure for the assignment
+    assert False, "Controlled failure: Delivery metric validation failed"
