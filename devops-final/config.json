@@ -1,0 +1,12 @@
+{
+  "service_name": "delivery-metrics-exporter",
+  "version": "1.0.0",
+  "port": 8000,
+  "host": "0.0.0.0",
+  "environment": "production",
+  "metrics": {
+    "collection_interval_seconds": 15,
+    "lead_time_target_hours": 24,
+    "max_acceptable_failure_rate": 0.15
+  }
+}

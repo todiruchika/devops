@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+test-reports/
+
+# Environments
+venv/
+env/
+ENV/
+
+# Build & Deployment artifacts
+deployment/
+deploy/
+dist/
+build/
+*.egg-info/
+*.zip
+*.tar.gz

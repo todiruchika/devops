@@ -1,0 +1,3 @@
+@echo off
+echo Starting Delivery Metrics Exporter...
+python metrics_exporter.py --config config.json
