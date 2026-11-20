@@ -117,7 +117,8 @@ pipeline {
         always {
             echo "Publishing test results..."
             junit allowEmptyResults: true, testResults: 'devops-final/test-reports/results.xml'
-            archiveArtifacts artifacts: 'devops-final/deployment/**', allowEmptyArchive: true
+            // Archive the folder that we actually created (outside devops-final)
+            archiveArtifacts artifacts: 'deployment/**', allowEmptyArchive: true
         }
         success {
             echo "=========================================================="
